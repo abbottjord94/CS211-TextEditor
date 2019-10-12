@@ -12,16 +12,16 @@
 #include <iostream>
 #include <cstdlib>
 #include <fstream>
-#include "list.h"
-#include <vector>
+#include <iterator>
 
 using namespace std;
 
 #define ctrl(x)           ((x) & 0x1f)
 #define KEY_RETURN 10
+#define KEY_TAB 9
+#define KEY_BACKSPACE 263
 
 void draw_centered(WINDOW* win, int max_y, int max_x, string text);
-void draw_document(WINDOW* win, int max_y, int max_x, vector<CharacterNode*> doc);
 void print_usage();
 
 int main(int argc, char* argv[])
@@ -31,15 +31,12 @@ int main(int argc, char* argv[])
 	int num_rows = 0;
 	int row = 1, col = 0;
 	string filename;
-	string buf = "";
+	string file_buffer = "";
+	int buffer_length = 0;
 	bool hide_gui = false;
 	bool prompt_savefile = false;
-	vector<CharacterNode*> document;
-	CharacterNode* cursor;
-
-	document.push_back(new CharacterNode);
-	cursor = document[0];
-
+	string::iterator cursor = file_buffer.begin();
+	char c;
 	//Argument parsing
 	for(int i=0; i<argc; i++) {
 		string arg = argv[i];
@@ -121,7 +118,30 @@ int main(int argc, char* argv[])
 			case KEY_RETURN:
 				row++;
 				col = 0;
-				buf += '\n';
+				file_buffer += '\n';
+				cursor++;
+				break;
+			case KEY_TAB:
+				col += 4;
+				if(col > num_cols) {
+					col = 0;
+					row++;
+				}
+				file_buffer += '\t';
+				cursor++;
+				break;
+			case KEY_BACKSPACE:
+				if(col == 0 && row == 1) break;
+				else if (col == 0 && row > 1) {
+					cursor--;
+					mvwdelch(main_window,row,col);
+					cursor = file_buffer.erase(cursor);
+				} else {
+					mvwdelch(main_window,row,col);
+					col--;
+					cursor--;
+					cursor = file_buffer.erase(cursor);
+				}
 				break;
 			default:
 				//insert(cursor,input);
@@ -130,7 +150,9 @@ int main(int argc, char* argv[])
 					col = 0;
 					row++;
 				}
-				buf += input;
+				file_buffer += input;
+				if(file_buffer.length() <= 1) cursor = file_buffer.begin();
+				else cursor++;
 				mvwaddch(main_window,row,col,input);
 				/*
 				if(col < num_cols) {
@@ -146,6 +168,9 @@ int main(int argc, char* argv[])
 				//draw_document(main_window,num_rows,num_cols,document);
 				break;
 		}
+		if(file_buffer.length() <= 1) cursor = file_buffer.begin();
+		c = *cursor;
+		buffer_length = file_buffer.length();
 	}
 	//end curses mode
 	endwin();
