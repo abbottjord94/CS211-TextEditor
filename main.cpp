@@ -103,24 +103,29 @@ int main(int argc, char* argv[])
 			case ctrl('c'):
 				keep_going = false;
 				break;
-			/*
+
 			case ctrl('o'):
 				if(prompt_savefile) {
 					//probably create a new window here for naming the file
+				} else {
+					ofstream outfile(filename);
+					outfile << file_buffer;
+					outfile.close();
 				}
-				ofstream outfile(filename);
 				break;
-			*/
+
 			case KEY_RESIZE:
 				resize_term(0, 0);
 				getmaxyx(main_window, num_rows, num_cols);
 				break;
+
 			case KEY_RETURN:
 				row++;
 				col = 0;
 				file_buffer += '\n';
 				cursor++;
 				break;
+
 			case KEY_TAB:
 				col += 4;
 				if(col > num_cols) {
@@ -130,6 +135,7 @@ int main(int argc, char* argv[])
 				file_buffer += '\t';
 				cursor++;
 				break;
+
 			case KEY_BACKSPACE:
 				if(col == 0 && row == 1) break;
 				else if (col == 0 && row > 1) {
@@ -143,6 +149,7 @@ int main(int argc, char* argv[])
 					cursor = file_buffer.erase(cursor);
 				}
 				break;
+
 			default:
 				//insert(cursor,input);
 				col++;
