@@ -85,6 +85,23 @@ int main(int argc, char* argv[])
 		temp_str << "TX Text Editor v0.2: " << filename;
 		draw_centered(main_window,0,num_cols,temp_str.str().c_str());
 	}
+
+	if(!prompt_savefile) {
+		ifstream infile(filename);
+		infile >> file_buffer;
+
+		for(int i=0; i<file_buffer.length(); i++) {
+			if(file_buffer[i] == '\t') col+=4;
+			else if(file_buffer[i] == '\n') {
+				mvwaddch(main_window,row,col,file_buffer[i]);
+				col = 0;
+				row++;
+			} else {
+				mvwaddch(main_window,row,col,file_buffer[i]);
+				col++;
+			}
+		}
+	}
 	//draw_document(main_window,num_rows,num_cols,document);
 	while (keep_going == true)
 	{
