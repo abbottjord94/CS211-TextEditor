@@ -13,6 +13,7 @@
 #include <cstdlib>
 #include <fstream>
 #include <iterator>
+#include "Trie.h"
 
 using namespace std;
 
@@ -37,6 +38,9 @@ int main(int argc, char* argv[])
 	bool prompt_savefile = false;
 	string::iterator cursor = file_buffer.begin();
 	char c;
+	Trie keyword_trie;
+	string temp_word, match;
+	vector<string> matches;
 	//Argument parsing
 	for(int i=0; i<argc; i++) {
 		string arg = argv[i];
@@ -59,6 +63,13 @@ int main(int argc, char* argv[])
 		}
 	}
 
+	ifstream keyword_infile("keywords.txt");
+	while(!keyword_infile.eof()) {
+		string word;
+		getline(keyword_infile,word);
+		keyword_trie.addWord(word);
+	}
+
 	//SETUP
 	//initialize our window
 	main_window = initscr();
@@ -75,7 +86,7 @@ int main(int argc, char* argv[])
 	keypad(main_window, TRUE);
 
 	//hide the cursor
-	curs_set(FALSE);
+	curs_set(TRUE);
 
 	//MAIN PROGRAM LOGIC GOES HERE
 	//pause for user input
@@ -101,6 +112,7 @@ int main(int argc, char* argv[])
 				col++;
 			}
 		}
+		cursor = file_buffer.end()-1;
 	}
 	//draw_document(main_window,num_rows,num_cols,document);
 	while (keep_going == true)
@@ -130,7 +142,18 @@ int main(int argc, char* argv[])
 					outfile.close();
 				}
 				break;
-
+			case ctrl('a'):
+				matches = keyword_trie.search(temp_word);
+				if(matches.empty()) break;
+				else {
+					match = matches[0];
+					for(int i=temp_word.length()-1; i<match.length(); i++) {
+						mvwaddch(main_window,row,col,match[i]);
+						col++;
+					}
+				}
+				temp_word = "";
+				break;
 			case KEY_RESIZE:
 				resize_term(0, 0);
 				getmaxyx(main_window, num_rows, num_cols);
@@ -141,6 +164,7 @@ int main(int argc, char* argv[])
 				col = 0;
 				file_buffer += '\n';
 				cursor++;
+				temp_word = "";
 				break;
 
 			case KEY_TAB:
@@ -151,6 +175,7 @@ int main(int argc, char* argv[])
 				}
 				file_buffer += '\t';
 				cursor++;
+				temp_word = "";
 				break;
 
 			case KEY_BACKSPACE:
@@ -166,7 +191,13 @@ int main(int argc, char* argv[])
 					cursor = file_buffer.erase(cursor);
 				}
 				break;
-
+/*
+			case KEY_SPACE:
+				temp_word = "";
+				mvwaddch(main_window,row,col,' ');
+				col++;
+				break;
+*/
 			default:
 				//insert(cursor,input);
 				col++;
@@ -175,6 +206,7 @@ int main(int argc, char* argv[])
 					row++;
 				}
 				file_buffer += input;
+				temp_word += input;
 				if(file_buffer.length() <= 1) cursor = file_buffer.begin();
 				else cursor++;
 				mvwaddch(main_window,row,col,input);
