@@ -72,12 +72,6 @@ public:
     {
     	return _children;
     }
-
-    bool search(string word) {
-	for(int i=0; i<word.length(); i++) {
-
-	}
-    }
 };
 
 #endif // !TRIE_NODE_H

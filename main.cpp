@@ -14,6 +14,7 @@
 #include <fstream>
 #include <iterator>
 #include "Trie.h"
+#include "Compression.h"
 
 using namespace std;
 
@@ -36,11 +37,15 @@ int main(int argc, char* argv[])
 	int buffer_length = 0;
 	bool hide_gui = false;
 	bool prompt_savefile = false;
+	bool use_compression = false;
 	string::iterator cursor = file_buffer.begin();
 	char c;
 	Trie keyword_trie;
 	string temp_word, match;
 	vector<string> matches;
+	unordered_map<string, string> compression_codes{};
+	unordered_map<string, string> decompression_codes{};
+
 	//Argument parsing
 	for(int i=0; i<argc; i++) {
 		string arg = argv[i];
@@ -50,6 +55,8 @@ int main(int argc, char* argv[])
 				exit(1);
 			} else if(arg == "--hide-gui" || arg == "-H") {
 				hide_gui = true;
+			} else if(arg == "--use-compression" || arg == "-C") {
+				use_compression = true;
 			} else {
 				cout << "Invalid argument: " << argv[i] << endl;
 				print_usage();
@@ -100,7 +107,31 @@ int main(int argc, char* argv[])
 	if(!prompt_savefile) {
 		ifstream infile(filename);
 		infile >> file_buffer;
-
+		if(use_compression) {
+			string codefile_name = filename + ".codes";
+			string c;
+			string word = "";
+			vector<string> parts{};
+			ifstream codefile(codefile_name);
+			while(codefile.good()) {
+				getline(codefile, c);
+				for(int i=0; i<c.length(); i++) {
+					if(c[i] == ':') {
+						parts.push_back(word);
+						word = "";
+					} else {
+						if(c[i] == '\n') {
+						} else {
+							word += c[i];
+						}
+					}
+				}
+				decompression_codes.insert(make_pair(parts[0], parts[1]));
+				parts.pop_back();
+				parts.pop_back();
+			}
+			file_buffer = decompress(file_buffer, decompression_codes);
+		}
 		for(int i=0; i<file_buffer.length(); i++) {
 			if(file_buffer[i] == '\t') col+=4;
 			else if(file_buffer[i] == '\n') {
@@ -137,9 +168,21 @@ int main(int argc, char* argv[])
 				if(prompt_savefile) {
 					//probably create a new window here for naming the file
 				} else {
-					ofstream outfile(filename);
-					outfile << file_buffer;
-					outfile.close();
+					if(use_compression) {
+						ofstream codefile(filename + ".codes");
+						compression_codes = generate_alphabet_codes(file_buffer);
+						for(auto c : reverse(compression_codes)) {
+							codefile << c.first << ":" << c.second << '\n';
+						}
+						codefile.close();
+						ofstream out(filename);
+						out << compress(file_buffer, compression_codes);
+						out.close();
+					} else {
+						ofstream outfile(filename);
+						outfile << file_buffer;
+						outfile.close();
+					}
 				}
 				break;
 			case ctrl('a'):

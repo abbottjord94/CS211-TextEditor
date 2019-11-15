@@ -1,11 +1,11 @@
 debug:
-	clang++ main.cpp Trie.h TrieNode.h -lcurses -std=c++11 -g
+	clang++ main.cpp Trie.h TrieNode.h Compression.h -lcurses -std=c++11 -g
 
 release:
-	clang++ main.cpp Trie.h TrieNode.h -lcurses -std=c++11
+	clang++ main.cpp Trie.h TrieNode.h Compression.h -lcurses -std=c++11
 
 debug-g++:
-	g++ main.cpp Trie.h TrieNode.h -lcurses -std=c++11 -g
+	g++ main.cpp Trie.h TrieNode.h Compression.h -lcurses -std=c++11 -g
 
 release-g++:
-	g++ main.cpp Trie.h TrieNode.h -lcurses -std=c++11
+	g++ main.cpp Trie.h TrieNode.h Compression.h -lcurses -std=c++11
