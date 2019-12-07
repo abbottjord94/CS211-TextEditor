@@ -13,6 +13,7 @@
 #include <cstdlib>
 #include <fstream>
 #include <iterator>
+#include <utility>
 #include "Trie.h"
 #include "Compression.h"
 
@@ -24,6 +25,10 @@ using namespace std;
 #define KEY_BACKSPACE 263
 
 void draw_centered(WINDOW* win, int max_y, int max_x, string text);
+void insertionSortR(vector<string>& data, int n);
+void bubbleSort(vector<string>& data);
+void quickSortHelper(vector<string>& data, int start, int end_i);
+void quickSort(vector<string>& data);
 void print_usage();
 
 int main(int argc, char* argv[])
@@ -38,6 +43,10 @@ int main(int argc, char* argv[])
 	bool hide_gui = false;
 	bool prompt_savefile = false;
 	bool use_compression = false;
+	bool use_selection_sort = false;
+	bool use_insertion_sort = false;
+	bool use_bubble_sort = false;
+	bool use_quick_sort = false;
 	string::iterator cursor = file_buffer.begin();
 	char c;
 	Trie keyword_trie;
@@ -45,6 +54,10 @@ int main(int argc, char* argv[])
 	vector<string> matches;
 	unordered_map<string, string> compression_codes{};
 	unordered_map<string, string> decompression_codes{};
+	unordered_map<string, int> freq_table{};
+	priority_queue<pair<string,int>, vector<pair<string, int>>> pq{};
+	vector<string> words;
+	string temp_file_buffer = "";
 
 	//Argument parsing
 	for(int i=0; i<argc; i++) {
@@ -57,6 +70,14 @@ int main(int argc, char* argv[])
 				hide_gui = true;
 			} else if(arg == "--use-compression" || arg == "-C") {
 				use_compression = true;
+			} else if(arg == "--use-selection-sort" || arg == "-S") {
+				use_selection_sort = true;
+			} else if(arg == "--use-insertion-sort" || arg == "-I") {
+				use_insertion_sort = true;
+			} else if(arg == "--use-bubble-sort" || arg == "-B") {
+				use_bubble_sort = true;
+			} else if(arg == "--use-quick-sort" || arg == "-Q") {
+				use_quick_sort = true;
 			} else {
 				cout << "Invalid argument: " << argv[i] << endl;
 				print_usage();
@@ -197,6 +218,68 @@ int main(int argc, char* argv[])
 				}
 				temp_word = "";
 				break;
+			case ctrl('e'):
+				if(!prompt_savefile) {
+				if(use_selection_sort) {
+					words = str_split(file_buffer);
+					for(auto w : words) {
+						unordered_map<string, int>::iterator search = freq_table.find(w);
+						if(search == freq_table.end()) {
+						//add word to frequency table
+							freq_table.insert(make_pair(w,1));
+						}
+						else {
+						//increment frequency table by one
+							search->second = search->second+1;
+						}
+					}
+					for(auto c : freq_table) {
+						pq.push(c);
+					}
+					while(!pq.empty()) {
+						pair<string, int> q = pq.top();
+						for(int i=0; i<q.second; i++) {
+							temp_file_buffer += q.first + " ";
+						}
+						file_buffer = temp_file_buffer;
+						pq.pop();
+					}
+					ofstream outfile(filename);
+					outfile << temp_file_buffer;
+					outfile.close();
+					}
+				else if(use_insertion_sort) {
+					words = str_split(file_buffer);
+					insertionSortR(words, words.size());
+					for(auto w : words) {
+						temp_file_buffer += w + " ";
+					}
+					ofstream outfile(filename);
+					outfile << temp_file_buffer;
+					outfile.close();
+				}
+				else if(use_bubble_sort) {
+					words = str_split(file_buffer);
+					bubbleSort(words);
+					for(auto w : words) {
+						temp_file_buffer += w + " ";
+					}
+					ofstream outfile(filename);
+					outfile << temp_file_buffer;
+					outfile.close();
+				}
+				else if(use_quick_sort) {
+					words = str_split(file_buffer);
+					//quickSort(words);
+					for(auto w : words) {
+						temp_file_buffer += w + " ";
+					}
+					ofstream outfile(filename);
+					outfile << temp_file_buffer;
+					outfile.close();
+				}
+				}
+				break;
 			case KEY_RESIZE:
 				resize_term(0, 0);
 				getmaxyx(main_window, num_rows, num_cols);
@@ -294,6 +377,88 @@ void draw_document(WINDOW* win, int max_y, int max_x, vector<CharacterNode*> doc
 	}
 }
 */
+void insertionSortR(vector<string>& data, int n) {
+	string x;
+	int j;
+	if(n > 0) {
+		insertionSortR(data, data.size()-1);
+		x = data[n];
+		j = n-1;
+		while(j >=0 && data[j] > x) {
+			data[j+1] = data[j];
+			j--;
+		}
+	}
+}
+
+void bubbleSort(vector<string>& data) {
+	int n = data.size();
+	bool swapped = true;
+	for(int i=0; i<data.size(); i++) {
+		swapped = false;
+		for(int j=1; j<data.size()-i; j++) {
+			if(data[j-1] > data[j]) {
+				string temp = data[j-1];
+				data[j-1] = data[j];
+				data[j] = temp;
+				swapped = true;
+			}
+		}
+		if(!swapped) {
+			break;
+		}
+	}
+}
+
+void quickSortHelper(vector<string>& data, int start, int end_i) {
+	if(end_i <= start) return;
+	if(end_i - start == 1) {
+		if(data[end_i] < data[start]) {
+			string temp = data[end_i];
+			data[end_i] = data[start];
+			data[start] = temp;
+		}
+		return;
+	}
+	string first = data[start];
+	string last = data[end_i];
+	int mid = (start + end_i) / 2;
+	string middle = data[mid];
+	int pivot = start;
+
+	if( (middle > first && middle < last) || (middle < first && middle > last) ) pivot = mid;
+	else if( (last > first && last < middle) || (last < first && last > middle) ) pivot = end_i;
+
+	string pivot_value = data[pivot];
+	data[pivot] = data[end_i];
+	data[end_i] = pivot_value;
+
+	int i = start;
+	int j = end_i;
+	while(i < j) {
+		while(data[i]< pivot_value && i < j) {
+			i++;
+		}
+		while(data[j] > pivot_value && i < j) {
+			j--;
+		}
+		if(i < j) {
+			string temp = data[i];
+			data[i] = data[j];
+			data[j] = temp;
+		}
+	}
+	string temp = data[i];
+	data[i] = pivot_value;
+	data[end_i] = temp;
+
+	quickSortHelper(data, start, i-1);
+	quickSortHelper(data, i+1, end_i);
+}
+
+void quickSort(vector<string>& data) {
+	quickSortHelper(data, 0, data.size()-1);
+}
 
 void print_usage() {
 	cout << "TX Text Editor v0.2 (alpha)\n";
@@ -301,5 +466,10 @@ void print_usage() {
 	cout << "Options:\n";
 	cout << "\t--help, -h: Display this help message and quit\n";
 	cout << "\t--hide_gui, -H: Hide the GUI\n";
+	cout << "\t--use_compression, -C: Attempt to use compression when opening and saving files\n";
+	cout << "\t--use-selection-sort, -S: Use selection sort for the word sorting feature\n";
+	cout << "\t--use-insertion-sort, -I: Use insertion sort for the word sorting feature\n";
+	cout << "\t--use-bubble-sort, -B: Use bubble sort for the word sorting feature\n";
+	cout << "\t--use-quick-sort, -Q: Use quick sort for the word sorting feature\n";
 	exit(1);
 }
